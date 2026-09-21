@@ -9,6 +9,7 @@ import br.com.dsc.library.model.Usuario;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import javax.persistence.PersistenceContext;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -33,15 +34,19 @@ class EmprestimoRepositoryTest {
     @Autowired
     private ItemEmprestimoRepository itemEmprestimoRepository;
 
+    @PersistenceContext
+    private javax.persistence.EntityManager entityManager;
+
     @Test
     void deveListarEmprestimosAtivosDoUsuarioComSeusLivros() {
-        Usuario usuario = usuarioRepository.save(new Usuario("Maria Silva", "456", "maria@email.com", "8888", LocalDate.now(), "Rua B", true));
+        Usuario usuario = usuarioRepository.saveAndFlush(new Usuario("Maria Silva", "456", "maria@email.com", "8888", LocalDate.now(), "Rua B", true));
         Categoria categoria = categoriaRepository.save(new Categoria("Historia", "Historia geral"));
         Livro livro = livroRepository.save(new Livro("444", "Historia do Brasil", "Editora D", 2021, 220, 3, 2, categoria));
-        Emprestimo emprestimo = emprestimoRepository.save(new Emprestimo(usuario, LocalDate.now(), LocalDate.now().plusDays(7), null, StatusEmprestimo.ATIVO, null));
-        itemEmprestimoRepository.save(new ItemEmprestimo(emprestimo, livro));
+        Emprestimo emprestimo = emprestimoRepository.saveAndFlush(new Emprestimo(usuario, LocalDate.now(), LocalDate.now().plusDays(7), null, StatusEmprestimo.ATIVO, null));
+        itemEmprestimoRepository.saveAndFlush(new ItemEmprestimo(emprestimo, livro));
+        entityManager.clear();
 
-        assertThat(emprestimoRepository.findByUsuarioIdAndStatus(usuario.getId(), StatusEmprestimo.ATIVO))
+        assertThat(emprestimoRepository.findByUsuario_IdAndStatus(usuario.getId(), StatusEmprestimo.ATIVO))
                 .singleElement().satisfies(resultado -> assertThat(resultado.getItens()).hasSize(1));
     }
 
